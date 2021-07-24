@@ -6,6 +6,8 @@ from flask_jwt_extended import  JWTManager
 from flask_bcrypt import Bcrypt
 from datetime import timedelta
 
+bcrypt = Bcrypt()
+
 def create_app():
     app = Flask("notesapp")
     
@@ -31,12 +33,11 @@ def create_app():
     app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET')
     jwt = JWTManager(app)
 
-    # from notesapp.mod_users.controller import applet as users_applet
+    from notesapp.mod_users.controller import applet as users_applet
     # from . import db 
     # db.init_app(app) 
     # db.create_all()
-    # app.register_blueprint(users_applet)
-    print("starting")
+    app.register_blueprint(users_applet)
     return app
 
 if __name__ == "__main__":
