@@ -1,4 +1,4 @@
-from flask import request, Blueprint, jsonify, current_app
+from flask import request, Blueprint, jsonify
 from flask_jwt_extended import get_jwt, unset_jwt_cookies, create_access_token, get_jwt_identity, jwt_required, set_access_cookies
 from notesapp import bcrypt
 from . import db
@@ -19,132 +19,114 @@ def refresh_expiring_jwts(response):
     except (RuntimeError, KeyError):
         return response
 
-# @applet.route('/verify', methods = ['GET'])
-# @jwt_required()
-# def user_verify():
-#     email = get_jwt_identity()
-#     user = User.query.filter_by(email=email).first()
-#     if(user):
-#         return {'id': user.id, 'name': user.name, 'email': user.email, 'phone': user.phone, 'role': role.name}, 200
-#     return {'message': 'fail'}, 404
+@applet.route('/verify', methods = ['GET'])
+@jwt_required()
+def user_verify():
+    conn = db.get_db()
+    cursor = conn.cursor
+    email = get_jwt_identity()
+    cursor.execute("SELECT * FROM tblUsers WHERE email = %s", (email, ))
+    user = cursor.fetchone()
+    if(user):
+        return {'id': user[0], 'name': user[2], 'email': user[1]}, 200
+    return {'message': 'user doesnt exist'}, 404
 
-# @applet.route('/<user_id>', methods = ['GET'])
-# @jwt_required()
-# def get_user_details(user_id):
-#     try:
-#         user_id = int(user_id)
-#     except ValueError:
-#         return {'message': 'Invalid user ID'}, 400
-#     user = User.query.filter_by(id=user_id).first()
-#     if(user):
-#         role = db.session.query(roles_users_table).join(Role).filter((roles_users_table.c.user_id==user.id) & (roles_users_table.c.role_id == Role.id)).all()
-#         role = Role.query.filter_by(id=role[0][1]).first()
-#         return {'id': user.id, 'name': user.name, 'email': user.email, 'phone': user.phone, 'role': role.name}, 200
-#     return {'message': 'fail'}, 404
+@applet.route('/<user_id>', methods = ['PUT'])
+@jwt_required()
+def edit_user_details(user_id):
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        return {'message': 'Invalid user ID'}, 400 
+    conn = db.get_db()
+    cursor = conn.cursor()
+    content = request.get_json(silent=True)
+    try:
+        name = content['name']
+    except:
+        return {"message": "Bad Request"}, 400
+    cursor.execute("SELECT * FROM tblUsers WHERE id = %s", (user_id, ))
+    user = cursor.fetchone()
+    if user and user[1] == get_jwt_identity():
+        cursor.execute("UPDATE tblUsers set name = %s where id = %s", (name, user_id))
+        conn.commit()
+        db.close_db()
+        return {"message": "Changes saved"}, 200
+    db.close_db()
+    return {'message': 'Changes not saved'}, 409   
 
-# @applet.route('/<user_id>', methods = ['PUT'])
-# @jwt_required()
-# def edit_user_details(user_id):
-#     try:
-#         user_id = int(user_id)
-#     except ValueError:
-#         return {'message': 'Invalid user ID'}, 400
-#     content = request.get_json(silent=True)
-#     user = User.query.filter_by(id=user_id).first()
-#     user_phone = User.query.filter_by(phone=content['phone']).first()
-#     if(user.phone == content['phone'] or user_phone == None):
-#         user.name = content['name']
-#         user.phone = content['phone']
-#         db.session.commit()
-#         db.session.remove()
-#         return {"message": "Changes saved"}, 200
-#     return {'message': 'Changes not saved'}, 409   
+@applet.route('/<user_id>', methods = ['DELETE'])
+@jwt_required()
+def delete_user_details(user_id):
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        return {'message': 'Invalid user ID'}, 400    
+    conn = db.get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tblUsers WHERE id = %s", (user_id, ))
+    user = cursor.fetchone()        
+    if user and user[1] == get_jwt_identity():
+        cursor.execute("DELETE FROM tblUsers WHERE id = %s", (user_id, ))
+        conn.commit()
+        db.close_db()
+        return '', 204
+    db.close_db()
+    return {'message': "User doesn't exist"}, 400
 
-# @applet.route('/<user_id>', methods = ['DELETE'])
-# @jwt_required()
-# def delete_user_details(user_id):
-#     try:
-#         user_id = int(user_id)
-#     except ValueError:
-#         return {'message': 'Invalid user ID'}, 400        
-#     user = User.query.filter_by(id=user_id).first()
-#     if not user:
-#         db.session.remove()
-#         return {'message': 'Rain gauge with the ID does not exist'}, 400
-#     db.session.delete(user)
-#     db.session.commit()
-#     return '', 204
+@applet.route('/signup', methods=['POST'])
+def signup():
+    conn = db.get_db()
+    cursor = conn.cursor()
+    content = request.get_json(silent=True)
+    try:
+        name = content['name']
+        email = content['email']
+        password = bcrypt.generate_password_hash(content['password']).decode('utf-8')
+    except:
+        return {"message": "Bad Request"}, 400
+    cursor.execute("SELECT email FROM tblUsers WHERE email = %s", (email, ))
+    user = cursor.fetchone()
+    if(user):
+        db.close_db()
+        return {'message': 'User exists'}, 409
 
-# @applet.route('/collectors', methods = ['GET'])
-# @jwt_required()
-# def collectors():
-#     try:
-#         role = [r[0] for r in db.session.query(roles_users_table).filter_by(role_id=2).all()]
-#         collectors = User.query.filter(User.id.in_(role)).all()
-#         response = jsonify([collector.to_dict() for collector in collectors])
-#         return response
-#     except:
-#         return {'message': 'server error'}, 500 
+    cursor.execute("INSERT INTO tblUsers (email, name, password) VALUES (%s, %s, %s)", (email, name, password))
+    conn.commit()
+    
+    cursor.execute("SELECT * FROM tblUsers WHERE email = %s", (email, ))
+    id, email, name, _ = cursor.fetchone()
+    response = jsonify({'id': id, 'name': name, 'email': email})
+    access_token = create_access_token(identity=email)
+    set_access_cookies(response, access_token)
+    db.close_db()
+    return response
 
-# @applet.route('/admins', methods = ['GET'])
-# @jwt_required()
-# def admins():
-#     try:
-#         role = [r[0] for r in db.session.query(roles_users_table).filter_by(role_id=1).all()]
-#         admins = User.query.filter(User.id.in_(role)).all()
-#         response = jsonify([admin.to_dict() for admin in admins])
-#         return response
-#     except:
-#         return {'message': 'server error'}, 500
+@applet.route('/login', methods=['POST'])
+def login():
+    conn = db.get_db()
+    cursor = conn.cursor()
+    content = request.get_json()
+    try:
+        email = content['email']
+        password = content['password']
+    except:
+        return {"message": "Bad Request"}, 400
+    if email:
+        cursor.execute("SELECT * FROM tblUsers WHERE email = %s", (email, ))
+        user = cursor.fetchone()
+        if user and bcrypt.check_password_hash(user[3], password):
+            response = jsonify({'id': user[0], 'name': user[2], 'email': user[1]})
+            access_token = create_access_token(identity=email)
+            set_access_cookies(response, access_token)
+            db.close_db()
+            return response
+    db.close_db()
+    return {'message': 'Invalid email or password'}, 401
 
-# @applet.route('/logout', methods=['POST'])
-# def logout():
-#     response = jsonify({"message": "logout successful"})
-#     unset_jwt_cookies(response)
-#     return response
-
-# @applet.route('/signup', methods=['POST'])
-# def signup():
-#     content = request.get_json(silent=True)
-#     name = content['name']
-#     email = content['email']
-#     phone = content['phone']
-#     role = content['role']
-#     password = bcrypt.generate_password_hash(content['password']).decode('utf-8')
-#     if User.query.filter_by(email=email).first() or User.query.filter_by(phone=phone).first():
-#         db.session.remove()
-#         return {'message': 'User exists'}, 409
-#     role = db.session.query(Role).filter_by(name=role).first()
-#     user = User(name=name, email=email, phone=phone, password=password)
-#     user.roles.append(role)
-#     db.session.add(user)
-#     db.session.commit()
-#     role = db.session.query(roles_users_table).join(Role).filter((roles_users_table.c.user_id==user.id) & (roles_users_table.c.role_id == Role.id)).all()
-#     role = Role.query.filter_by(id=role[0][1]).first()
-#     db.session.remove()
-#     response = jsonify({'id': user.id, 'name': user.name, 'email': user.email, 'phone': user.phone, 'role': role.name})
-#     access_token = create_access_token(identity=email)
-#     set_access_cookies(response, access_token)
-#     return response
-
-# @applet.route('/login', methods=['POST'])
-# def login():
-#     content = request.get_json()
-#     email = content['email']
-#     password = content['password']
-#     if email:
-#         user = User.query.filter_by(email=email).first()
-#         if user and bcrypt.check_password_hash(user.password, password):
-#             role = db.session.query(roles_users_table).join(Role).filter((roles_users_table.c.user_id==user.id) & (roles_users_table.c.role_id == Role.id)).all()
-#             role = Role.query.filter_by(id=role[0][1]).first()
-#             db.session.remove()
-#             response = jsonify({'id': user.id, 'name': user.name, 'email': user.email, 'phone': user.phone, 'role': role.name})
-#             access_token = create_access_token(identity=email)
-#             set_access_cookies(response, access_token)
-#             return response
-#     return {'message': 'Invalid email or password'}, 401
-
-@applet.route('/', methods=['GET', 'POST'])
-def ignore():
-    print(bcrypt)
-    return {}
+@applet.route('/logout')
+@jwt_required()
+def logout():
+    response = jsonify({"message": "User logged out"})
+    unset_jwt_cookies(response)
+    return response

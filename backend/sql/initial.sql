@@ -2,7 +2,7 @@ CREATE TABLE tblUsers (
     id SERIAL PRIMARY KEY,
     email VARCHAR(50) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
-    password VARCHAR(50) NOT NULL
+    password text NOT NULL
 );
 
 CREATE TABLE tblTags (
