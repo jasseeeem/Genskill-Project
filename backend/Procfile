@@ -1,1 +1,1 @@
-web: gunicorn wsgi:notesapp
+web: gunicorn --bind 0.0.0.0:$PORT wsgi:notesapp
