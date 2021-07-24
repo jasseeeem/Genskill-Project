@@ -36,6 +36,7 @@ def create_app(test_config=None):
     # db.init_app(app) 
     # db.create_all()
     # app.register_blueprint(users_applet)
+    print("starting")
     return app
 
 if __name__ == "__main__":
