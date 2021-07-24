@@ -6,7 +6,7 @@ from flask_jwt_extended import  JWTManager
 from flask_bcrypt import Bcrypt
 from datetime import timedelta
 
-def create_app(test_config=None):
+def create_app():
     app = Flask("notesapp")
     
     bcrypt = Bcrypt(app)
