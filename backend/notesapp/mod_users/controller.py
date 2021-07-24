@@ -3,8 +3,13 @@ from flask_jwt_extended import get_jwt, unset_jwt_cookies, create_access_token, 
 from notesapp import bcrypt
 from . import db
 from datetime import datetime, timedelta, timezone
+import json
 
 applet = Blueprint('users', __name__, url_prefix='/api/users')
+
+def myconverter(o):
+    if isinstance(o, datetime):
+        return o.__str__()
 
 @applet.after_request
 def refresh_expiring_jwts(response):
@@ -130,3 +135,93 @@ def logout():
     response = jsonify({"message": "User logged out"})
     unset_jwt_cookies(response)
     return response
+
+@applet.route('/<user_id>/notes', methods = ['GET'])
+@jwt_required()
+def get_all_notes(user_id):
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        return {'message': 'Invalid ID'}, 400 
+    conn = db.get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tblUsers WHERE id = %s", (user_id, ))
+    user = cursor.fetchone()
+    if not user:
+        db.close_db()
+        return {"message": "User doesn't exist"}, 404
+    if(user[1] != get_jwt_identity()):
+        db.close_db()
+        return {"message": "Access Denied"}, 403
+    cursor.execute("SELECT * FROM tblNotes WHERE user_id = %s", (user_id, ))
+    return json.dumps(cursor.fetchall(), default = myconverter)
+
+@applet.route('/<user_id>/notes', methods = ['POST'])
+@jwt_required()
+def add_note(user_id):
+    try:
+        user_id = int(user_id)
+        content = request.get_json()
+        note = content['note']
+        last_edited = content['last_edited']
+    except ValueError:
+        return {'message': 'Bad Request'}, 400 
+    conn = db.get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tblUsers WHERE id = %s", (user_id, ))
+    user = cursor.fetchone()
+    if not user:
+        db.close_db()
+        return {"message": "User doesn't exist"}, 404
+    if(user[1] != get_jwt_identity()):
+        db.close_db()
+        return {"message": "Access Denied"}, 403
+    cursor.execute("INSERT INTO tblNotes (user_id, note, last_edited) VALUES (%s, %s, %s)", (user_id, note, last_edited))
+    db.close_db()
+    return json.dumps(cursor.fetchall(), default = myconverter)
+
+@applet.route('/<user_id>/notes/<notes_id>', methods = ['PUT'])
+@jwt_required()
+def edit_note(user_id, notes_id):
+    try:
+        user_id = int(user_id)
+        content = request.get_json()
+        note = content['note']
+        last_edited = content['last_edited']
+    except ValueError:
+        return {'message': 'Bad Request'}, 400 
+    conn = db.get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tblUsers WHERE id = %s", (user_id, ))
+    user = cursor.fetchone()
+    if not user:
+        db.close_db()
+        return {"message": "User doesn't exist"}, 404
+    if(user[1] != get_jwt_identity()):
+        db.close_db()
+        return {"message": "Access Denied"}, 403
+    cursor.execute("UPDATE tblNotes SET note = %s, last_edited = %s", (note, last_edited))
+    db.close_db()
+    return json.dumps(cursor.fetchall(), default = myconverter)
+
+@applet.route('/<user_id>/notes/<notes_id>', methods = ['DELETE'])
+@jwt_required()
+def edit_note(user_id, notes_id):
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        return {'message': 'Bad Request'}, 400 
+    conn = db.get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tblUsers WHERE id = %s", (user_id, ))
+    user = cursor.fetchone()
+    if not user:
+        db.close_db()
+        return {"message": "User doesn't exist"}, 404
+    if(user[1] != get_jwt_identity()):
+        db.close_db()
+        return {"message": "Access Denied"}, 403
+    cursor.execute("DELETE FROM tblNotes WHERE id = %s", (notes_id, ))
+    db.close_db()
+    return json.dumps(cursor.fetchall(), default = myconverter)
+
