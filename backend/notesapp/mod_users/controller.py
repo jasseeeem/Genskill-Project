@@ -206,7 +206,7 @@ def edit_note(user_id, notes_id):
 
 @applet.route('/<user_id>/notes/<notes_id>', methods = ['DELETE'])
 @jwt_required()
-def edit_note(user_id, notes_id):
+def delete_note(user_id, notes_id):
     try:
         user_id = int(user_id)
     except ValueError:
