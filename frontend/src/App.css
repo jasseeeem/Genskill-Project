@@ -1,0 +1,11 @@
+@media (max-width: 768px) {
+    .guy{
+        display: none;
+    }
+  }
+
+@media (min-width: 768px) {
+    .bgmobile{
+        display: none;
+    }
+}
