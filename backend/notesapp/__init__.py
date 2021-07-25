@@ -29,6 +29,7 @@ def create_app():
 
     # Setup the Flask-JWT-Extended extension
     app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET')
+    global jwt
     jwt = JWTManager(app)
 
     from notesapp.mod_users.controller import applet as users_applet

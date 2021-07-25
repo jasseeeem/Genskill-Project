@@ -16,13 +16,16 @@ function App() {
   const handleSettings = () => {
     console.log("clicked settings");
   }
+  const makeUser = (obj) => {
+    setUser(obj);
+  }
 
   useEffect(() => {
 
     (async () => {
       let res = await fetch(process.env.REACT_APP_API_URL + "/users/verify", {
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
@@ -56,11 +59,10 @@ function App() {
             {user ?
             <div className="container-fluid">
               <Sidebar />
-              <p>ji</p>
               <Notes />
             </div>
             :
-              <Home /> 
+              <Home setUser={makeUser} /> 
             }
           </>
         ) :

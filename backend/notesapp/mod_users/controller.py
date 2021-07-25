@@ -28,7 +28,7 @@ def refresh_expiring_jwts(response):
 @jwt_required()
 def user_verify():
     conn = db.get_db()
-    cursor = conn.cursor
+    cursor = conn.cursor()
     email = get_jwt_identity()
     cursor.execute("SELECT * FROM tblUsers WHERE email = %s", (email, ))
     user = cursor.fetchone()
