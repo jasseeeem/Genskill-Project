@@ -163,6 +163,7 @@ def add_note(user_id):
         user_id = int(user_id)
         content = request.get_json()
         note = content['note']
+        title = content['title']
         last_edited = content['last_edited']
     except ValueError:
         return {'message': 'Bad Request'}, 400 
@@ -176,8 +177,7 @@ def add_note(user_id):
     if(user[1] != get_jwt_identity()):
         db.close_db()
         return {"message": "Access Denied"}, 403
-    cursor.execute("INSERT INTO tblNotes (user_id, note, last_edited) VALUES (%s, %s, %s)", (user_id, note, last_edited))
-    db.close_db()
+    cursor.execute("INSERT INTO tblNotes (user_id, note, last_edited, title) VALUES (%s, %s, %s, %s)", (user_id, note, last_edited, title))
     return json.dumps(cursor.fetchall(), default = myconverter)
 
 @applet.route('/<user_id>/notes/<notes_id>', methods = ['PUT'])
@@ -187,7 +187,8 @@ def edit_note(user_id, notes_id):
         user_id = int(user_id)
         content = request.get_json()
         note = content['note']
-        last_edited = content['last_edited']
+        title = content['title']
+        last_edited = datetime.strptime(content['last_edited'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
     except ValueError:
         return {'message': 'Bad Request'}, 400 
     conn = db.get_db()
@@ -200,9 +201,10 @@ def edit_note(user_id, notes_id):
     if(user[1] != get_jwt_identity()):
         db.close_db()
         return {"message": "Access Denied"}, 403
-    cursor.execute("UPDATE tblNotes SET note = %s, last_edited = %s", (note, last_edited))
+    cursor.execute("UPDATE tblNotes SET note = %s, last_edited = %s, title = %s WHERE id = %s", (note, last_edited, title, notes_id))
+    conn.commit()
     db.close_db()
-    return json.dumps(cursor.fetchall(), default = myconverter)
+    return {'message': 'note updated succesffully'}, 204
 
 @applet.route('/<user_id>/notes/<notes_id>', methods = ['DELETE'])
 @jwt_required()

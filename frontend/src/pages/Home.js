@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Button, Form, FormGroup, Label, Input, Radio } from "reactstrap";
+import { Button, Form, FormGroup, Label, Input } from "reactstrap";
 import guy from "../background/guy.svg";
 import bgmobile from "../background/bgmobile.svg";
 import { Modal } from "react-bootstrap";
 import Spinner from 'react-bootstrap/Spinner'
-
+import { Link } from 'react-router-dom';
 const Home = ({ setUser }) => {
   const [loginModalShow, setLoginModalShow] = useState(false);
   const [signupModalShow, setSignupModalShow] = useState(false);
@@ -108,7 +108,7 @@ const Home = ({ setUser }) => {
             </Button>
             <div className="mt-4">
               <small>
-                Developed as part of <a href="#">Genskill Project</a>
+                Developed as part of <Link to="#">Genskill Project</Link>
               </small>
             </div>
           </div>

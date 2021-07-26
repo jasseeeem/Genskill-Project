@@ -1,54 +1,107 @@
-import './App.css'; 
+import "./App.css";
 import { useEffect, useState } from "react";
-import { BrowserRouter, Route, Switch } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import { BeatLoader } from "react-spinners";
+import uuid from "react-uuid";
 import Home from "./pages/Home.js";
 import Sidebar from "./components/Sidebar";
-import Notes from "./components/Notes.js";
+import Notes from "./components/Note.js";
 import Navbar from "./components/Navbar.js";
-import './custom.scss';
+import "./custom.scss";
 
 function App() {
-
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
-  const [notes, setNotes] = useState(null);
+  const [notes, setNotes] = useState([]);
+  const [activeNote, setActiveNote] = useState("");
+
   const handleSettings = () => {
     console.log("clicked settings");
-  }
+  };
   const makeUser = (obj) => {
     setUser(obj);
+  };
+
+  const updateNote = async (updatedNote) => {
+    let res = await fetch(process.env.REACT_APP_API_URL + "/users/" + user.id + "/notes/" + updatedNote.server_id, {
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      method: "PUT",
+      body: JSON.stringify({
+        title: updatedNote.title,
+        note: updatedNote.note,
+        last_edited: updatedNote.last_edited
+      })
+    });
+    if(! res.ok) {
+      console.log("Error in updating note");
+    }
+  };
+
+  const addNote = async (addedNote) => {
+    let res = await fetch(process.env.REACT_APP_API_URL + "/users/" + user.id + "/notes/", {
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      method: "POST",
+      body: JSON.stringify({
+        title: addedNote.title,
+        note: addedNote.note,
+        last_edited: addedNote.last_edited
+      })
+    });
+    if(! res.ok) {
+      console.log("Error in adding note");
+    }
   }
 
-  useEffect(() => {
+  const getActiveNote = () => {
+    return notes.find((note) => note.client_id === activeNote);
+  };
 
+  const onUpdateNote = (updatedNote) => {
+    const updatedNotesArr = notes.map((note) => {
+      return (note.client_id === updatedNote.client_id) ? updatedNote : note;
+    });
+    setNotes(updatedNotesArr);
+  };
+
+  useEffect(() => {
     (async () => {
       let res = await fetch(process.env.REACT_APP_API_URL + "/users/verify", {
         headers: { "Content-Type": "application/json" },
-        credentials: 'include'
+        credentials: "include",
       });
       if (res.ok) {
-        const data = await res.json();
-        setUser(data);
+        res = await res.json();
+        setUser(res);
+        res = await fetch(
+          process.env.REACT_APP_API_URL + "/users/" + res.id + "/notes",
+          {
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          }
+        );
+        if (res.ok) {
+          res = await res.json();
+          res.map((obj) => {
+            notes.push({
+              server_id: obj[0],
+              client_id: uuid(),
+              user_id: obj[1],
+              title: obj[2],
+              note: obj[3],
+              last_edited: obj[4],
+            });
+          });
+        } else {
+          setNotes([]);
+        }
       } else {
         setUser(null);
       }
-      if(user) {
-        res = await fetch(process.env.REACT_APP_API_URL + "/users/" + user.id + "/notes", {
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
-        if(res.ok) {
-          res = await res.json();
-          setNotes(res);
-        }
-        else {
-          setNotes(null);
-        }
-      }
       setLoading(true);
     })();
-  }, [])
+  }, []);
 
   return (
     <div>
@@ -56,20 +109,32 @@ function App() {
         {loading ? (
           <>
             <Navbar user={user} handleSettings={handleSettings} />
-            {user ?
-            <div className="container-fluid">
-              <Sidebar />
-              <Notes />
-            </div>
-            :
-              <Home setUser={makeUser} /> 
-            }
+            {user ? (
+              <div className="d-flex" id="wrapper">
+                <Sidebar
+                  notes={notes}
+                  activeNote={getActiveNote()}
+                  setActiveNote={setActiveNote}
+                  updateNote = {updateNote}
+                  addNote = {addNote}
+                />
+                <Notes
+                  activeNote={getActiveNote()}
+                  setActiveNote={setActiveNote}
+                  onUpdateNote={onUpdateNote}
+                  updateNote = {updateNote}
+                  addNote = {addNote}
+                />
+              </div>
+            ) : (
+              <Home setUser={makeUser} />
+            )}
           </>
-        ) :
-        <div className="container text-center mt-5">
-          <BeatLoader loading />
-        </div>
-        }
+        ) : (
+          <div className="container text-center mt-5">
+            <BeatLoader loading />
+          </div>
+        )}
       </BrowserRouter>
     </div>
   );

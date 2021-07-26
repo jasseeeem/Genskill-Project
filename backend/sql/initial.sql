@@ -14,6 +14,7 @@ CREATE TABLE tblNotes (
     id SERIAL PRIMARY KEY,
     user_id INT,
     FOREIGN KEY (user_id) REFERENCES tblUsers (id),
+    title TEXT,
     note TEXT,
     last_edited TIMESTAMP NOT NULL
 );
