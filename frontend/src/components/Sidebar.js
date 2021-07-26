@@ -33,12 +33,12 @@ const Sidebar = ({ notes, activeNote, setActiveNote, updateNote, addNote }) => {
               }
             >
               <div className="d-flex w-100 justify-content-between">
-                <h5 className="mb-1">{note.title}</h5>
+                <h5 className="mb-1">{note.title ? note.title : "Title"}</h5>
               </div>
               <small>
-                {note.note && note.note.length > 100
+                {note.note ? note.note.length > 100
                   ? note.note.substr(0, 100) + "..."
-                  : note.note}
+                  : note.note : "Body"}
               </small>
             </div>
           ))}

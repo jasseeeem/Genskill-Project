@@ -24,6 +24,7 @@ const Note = ({
     );
   };
   const handleSave = () => {
+    console.log(activeNote)
     if (activeNote.server_id) updateNote(activeNote);
     else addNote(activeNote);
     setActiveNote("");
@@ -72,9 +73,9 @@ const Note = ({
           onChange={(e) => onEditField("note", e.target.value)}
         />
         <div className="d-flex mt-3  justify-content-between">
-          <small>
-            Last Edited: {format(new Date(activeNote.last_edited + " UTC"))}
-          </small>
+          <small>{activeNote.last_edited && 
+            "Last Edited: "+format(new Date(activeNote.last_edited + " UTC"))
+          }</small>
           <Button className="btn btn-primary" onClick={handleSave}>
             Save & Close
           </Button>

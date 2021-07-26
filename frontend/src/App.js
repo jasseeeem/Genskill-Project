@@ -37,8 +37,16 @@ function App() {
       console.log("Error in updating note");
     }
   };
+  
+  const onUpdateNote = (updatedNote) => {
+    const updatedNotesArr = notes.map((note) => {
+      return (note.client_id === updatedNote.client_id) ? updatedNote : note;
+    });
+    setNotes(updatedNotesArr);
+  };
 
   const addNote = async (addedNote) => {
+    console.log(addedNote)
     let res = await fetch(process.env.REACT_APP_API_URL + "/users/" + user.id + "/notes/", {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -49,7 +57,14 @@ function App() {
         last_edited: addedNote.last_edited
       })
     });
-    if(! res.ok) {
+    if(res.ok) {
+      res = await res.json();
+      console.log(res);
+      onUpdateNote({
+        ...addedNote,
+        server_id: res['id'],
+      })
+    } else {
       console.log("Error in adding note");
     }
   }
@@ -58,12 +73,32 @@ function App() {
     return notes.find((note) => note.client_id === activeNote);
   };
 
-  const onUpdateNote = (updatedNote) => {
-    const updatedNotesArr = notes.map((note) => {
-      return (note.client_id === updatedNote.client_id) ? updatedNote : note;
-    });
-    setNotes(updatedNotesArr);
-  };
+  
+
+  const newNote = () => {
+    var m = new Date();
+    var dateString =
+      m.getUTCFullYear() +
+      "-" +
+      (m.getUTCMonth() + 1) +
+      "-" +
+      m.getUTCDate() +
+      " " +
+      m.getUTCHours() +
+      ":" +
+      m.getUTCMinutes() +
+      ":" +
+      m.getUTCSeconds();
+    const note = {
+      client_id: uuid(),
+      user_id: user.id,
+      title: "",
+      note: "",
+      last_edited: dateString,
+    }
+    setActiveNote(note.client_id);
+    setNotes([note, ...notes])
+  }
 
   useEffect(() => {
     (async () => {
@@ -122,8 +157,9 @@ function App() {
                   activeNote={getActiveNote()}
                   setActiveNote={setActiveNote}
                   onUpdateNote={onUpdateNote}
-                  updateNote = {updateNote}
-                  addNote = {addNote}
+                  updateNote={updateNote}
+                  addNote={addNote}
+                  newNote={newNote}
                 />
               </div>
             ) : (

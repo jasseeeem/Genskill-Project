@@ -153,18 +153,24 @@ def get_all_notes(user_id):
     if(user[1] != get_jwt_identity()):
         db.close_db()
         return {"message": "Access Denied"}, 403
-    cursor.execute("SELECT * FROM tblNotes WHERE user_id = %s", (user_id, ))
+    cursor.execute("SELECT * FROM tblNotes WHERE user_id = %s ORDER BY last_edited DESC", (user_id, ))
     return json.dumps(cursor.fetchall(), default = myconverter)
 
 @applet.route('/<user_id>/notes', methods = ['POST'])
 @jwt_required()
 def add_note(user_id):
+    content = request.get_json()
+    if content['note']:
+        note = content['note']
+    else:
+        note = ""
+    if content['title']:
+        title = content['title']
+    else:
+        title = ""
     try:
         user_id = int(user_id)
-        content = request.get_json()
-        note = content['note']
-        title = content['title']
-        last_edited = content['last_edited']
+        last_edited = datetime.strptime(content['last_edited'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
     except ValueError:
         return {'message': 'Bad Request'}, 400 
     conn = db.get_db()
@@ -177,17 +183,26 @@ def add_note(user_id):
     if(user[1] != get_jwt_identity()):
         db.close_db()
         return {"message": "Access Denied"}, 403
-    cursor.execute("INSERT INTO tblNotes (user_id, note, last_edited, title) VALUES (%s, %s, %s, %s)", (user_id, note, last_edited, title))
-    return json.dumps(cursor.fetchall(), default = myconverter)
+    cursor.execute("INSERT INTO tblNotes (user_id, note, last_edited, title) VALUES (%s, %s, %s, %s) RETURNING id", (user_id, note, last_edited, title))
+    id = cursor.fetchone()[0]
+    conn.commit()
+    db.close_db()
+    return {'id': id}, 201
 
 @applet.route('/<user_id>/notes/<notes_id>', methods = ['PUT'])
 @jwt_required()
 def edit_note(user_id, notes_id):
+    content = request.get_json()
+    if content['note']:
+        note = content['note']
+    else:
+        note = ""
+    if content['title']:
+        title = content['title']
+    else:
+        title = ""
     try:
         user_id = int(user_id)
-        content = request.get_json()
-        note = content['note']
-        title = content['title']
         last_edited = datetime.strptime(content['last_edited'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
     except ValueError:
         return {'message': 'Bad Request'}, 400 
