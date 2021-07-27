@@ -75,7 +75,7 @@ def delete_user_details(user_id):
         cursor.execute("DELETE FROM tblUsers WHERE id = %s", (user_id, ))
         conn.commit()
         db.close_db()
-        return '', 204
+        return {'message': 'user deleted successfully'}, 204
     db.close_db()
     return {'message': "User doesn't exist"}, 400
 
@@ -239,6 +239,7 @@ def delete_note(user_id, notes_id):
         db.close_db()
         return {"message": "Access Denied"}, 403
     cursor.execute("DELETE FROM tblNotes WHERE id = %s", (notes_id, ))
+    conn.commit()
     db.close_db()
-    return json.dumps(cursor.fetchall(), default = myconverter)
+    return {'message': 'note deleted successfully'}, 204
 

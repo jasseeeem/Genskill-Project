@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { Input, Label, Button } from "reactstrap";
+import { RiDeleteBin6Line } from "react-icons/ri";
 
 const Note = ({
   activeNote,
@@ -9,6 +10,7 @@ const Note = ({
   updateNote,
   addNote,
   newNote,
+  deleteNote
 }) => {
   const format = (date) => {
     return (
@@ -76,9 +78,11 @@ const Note = ({
           <small>{activeNote.last_edited && 
             "Last Edited: "+format(new Date(activeNote.last_edited + " UTC"))
           }</small>
-          <Button className="btn btn-primary" onClick={handleSave}>
+          <div>
+                <Button className="btn btn-danger me-3"  onClick={() => deleteNote()} ><RiDeleteBin6Line color="white" size="20"/></Button>
+              <Button className="btn btn-primary" onClick={handleSave}>
             Save & Close
-          </Button>
+          </Button></div>
         </div>
       </div>
     </div>

@@ -46,7 +46,6 @@ function App() {
   };
 
   const addNote = async (addedNote) => {
-    console.log(addedNote)
     let res = await fetch(process.env.REACT_APP_API_URL + "/users/" + user.id + "/notes/", {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -73,6 +72,21 @@ function App() {
     return notes.find((note) => note.client_id === activeNote);
   };
 
+    const deleteNote = async () => {
+      const deletedNote = getActiveNote();
+      console.log(deletedNote)
+      setActiveNote(null);
+      setNotes(notes.filter(note => note.client_id !== deletedNote.client_id));
+      if(! deletedNote.server_id) return;
+      let res = await fetch(process.env.REACT_APP_API_URL + "/users/" + user.id + "/notes/" + deletedNote.server_id, {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        method: "DELETE",
+      });
+      if(! res.ok) {
+        console.log("Error while deleting note");
+      }
+    }
   
 
   const newNote = () => {
@@ -150,8 +164,8 @@ function App() {
                   notes={notes}
                   activeNote={getActiveNote()}
                   setActiveNote={setActiveNote}
-                  updateNote = {updateNote}
-                  addNote = {addNote}
+                  updateNote={updateNote}
+                  addNote={addNote}
                 />
                 <Notes
                   activeNote={getActiveNote()}
@@ -160,6 +174,7 @@ function App() {
                   updateNote={updateNote}
                   addNote={addNote}
                   newNote={newNote}
+                  deleteNote={deleteNote}
                 />
               </div>
             ) : (

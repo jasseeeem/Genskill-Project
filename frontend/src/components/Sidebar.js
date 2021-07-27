@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Input, Button } from "reactstrap";
 import "../App.css";
 import { FaSearch } from "react-icons/fa";
-
 const Sidebar = ({ notes, activeNote, setActiveNote, updateNote, addNote }) => {
   return (
     <div className="bg-light border-right vh-100" id="sidebar-wrapper">
@@ -16,6 +15,7 @@ const Sidebar = ({ notes, activeNote, setActiveNote, updateNote, addNote }) => {
         <div className="list-group list-group-flush overflow-scroll h-100">
           {notes.map((note) => (
             <div
+            key={note.client_id}
               onClick={() => {
                 if (activeNote) {
                   if (activeNote.server_id) {
@@ -33,8 +33,9 @@ const Sidebar = ({ notes, activeNote, setActiveNote, updateNote, addNote }) => {
               }
             >
               <div className="d-flex w-100 justify-content-between">
-                <h5 className="mb-1">{note.title ? note.title : "Title"}</h5>
-              </div>
+                <h6 className="mb-1">{note.title ? note.title.length > 15
+                  ? note.title.substr(0, 15) + "..."
+                  : note.title : "Title"}</h6></div>
               <small>
                 {note.note ? note.note.length > 100
                   ? note.note.substr(0, 100) + "..."
