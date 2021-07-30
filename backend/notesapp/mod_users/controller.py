@@ -154,7 +154,18 @@ def get_all_notes(user_id):
         db.close_db()
         return {"message": "Access Denied"}, 403
     cursor.execute("SELECT * FROM tblNotes WHERE user_id = %s ORDER BY last_edited DESC", (user_id, ))
-    return json.dumps(cursor.fetchall(), default = myconverter)
+    notes = cursor.fetchall()
+    for i, note in enumerate(notes):
+        cursor.execute("SELECT T.tag_name FROM tblTags T, tblTagsNotes TN WHERE TN.note_id = %s AND TN.tag_id = T.id", (note[0], ))
+        tags = cursor.fetchall()
+        tags_list = []
+        for tag in tags:
+            tags_list.append(tag[0])
+        note = list(note)
+        note.append(tags_list)
+        notes[i] = note
+    db.close_db()
+    return json.dumps(notes, default = myconverter), 200
 
 @applet.route('/<user_id>/notes', methods = ['POST'])
 @jwt_required()
@@ -168,6 +179,8 @@ def add_note(user_id):
         title = content['title']
     else:
         title = ""
+    try: tags = list(set(content['tags']))
+    except: tags = []
     try:
         user_id = int(user_id)
         last_edited = datetime.strptime(content['last_edited'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
@@ -184,10 +197,24 @@ def add_note(user_id):
         db.close_db()
         return {"message": "Access Denied"}, 403
     cursor.execute("INSERT INTO tblNotes (user_id, note, last_edited, title) VALUES (%s, %s, %s, %s) RETURNING id", (user_id, note, last_edited, title))
-    id = cursor.fetchone()[0]
+    conn.commit()
+    note_id = cursor.fetchone()[0]
+    tag_ids = []
+    for tag in tags:
+        cursor.execute("SELECT id FROM tblTags WHERE tag_name = %s", (tag, ))
+        id = cursor.fetchone()
+        if(id): id = id[0]
+        else:
+            cursor.execute("INSERT INTO tblTags (tag_name) VALUES (%s) RETURNING id", (tag, ))
+            conn.commit()
+            id = cursor.fetchone()[0]
+        tag_ids.append(id)
+    for tag_id in tag_ids:
+        cursor.execute("INSERT INTO tblTagsNotes (tag_id, note_id) VALUES (%s, %s)", (tag_id, note_id))
+        conn.commit()
     conn.commit()
     db.close_db()
-    return {'id': id}, 201
+    return {'id': note_id}, 201
 
 @applet.route('/<user_id>/notes/<notes_id>', methods = ['PUT'])
 @jwt_required()
@@ -201,6 +228,8 @@ def edit_note(user_id, notes_id):
         title = content['title']
     else:
         title = ""
+    try: tags = list(set(content['tags']))
+    except: tags = []
     try:
         user_id = int(user_id)
         last_edited = datetime.strptime(content['last_edited'], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
@@ -217,6 +246,22 @@ def edit_note(user_id, notes_id):
         db.close_db()
         return {"message": "Access Denied"}, 403
     cursor.execute("UPDATE tblNotes SET note = %s, last_edited = %s, title = %s WHERE id = %s", (note, last_edited, title, notes_id))
+    conn.commit()
+    tag_ids = []
+    cursor.execute("DELETE FROM tblTagsNotes WHERE note_id = %s", (notes_id, ))
+    conn.commit()
+    for tag in tags:
+        cursor.execute("SELECT id FROM tblTags WHERE tag_name = %s", (tag, ))
+        id = cursor.fetchone()
+        if(id): id = id[0]
+        else:
+            cursor.execute("INSERT INTO tblTags (tag_name) VALUES (%s) RETURNING id", (tag, ))
+            conn.commit()
+            id = cursor.fetchone()[0]
+        tag_ids.append(id)
+    for tag_id in tag_ids:
+        cursor.execute("INSERT INTO tblTagsNotes (tag_id, note_id) VALUES (%s, %s)", (tag_id, notes_id))
+        conn.commit()
     conn.commit()
     db.close_db()
     return {'message': 'note updated succesffully'}, 204
@@ -238,6 +283,8 @@ def delete_note(user_id, notes_id):
     if(user[1] != get_jwt_identity()):
         db.close_db()
         return {"message": "Access Denied"}, 403
+    cursor.execute("DELETE FROM tblTagsNotes WHERE note_id = %s", (notes_id, ))
+    conn.commit()
     cursor.execute("DELETE FROM tblNotes WHERE id = %s", (notes_id, ))
     conn.commit()
     db.close_db()

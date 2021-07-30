@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FiPlusCircle } from "react-icons/fi";
 import { Input, Label, Button } from "reactstrap";
 import { RiDeleteBin6Line } from "react-icons/ri";
+import CreatableSelect from 'react-select/creatable'
 
 const Note = ({
   activeNote,
@@ -10,8 +11,11 @@ const Note = ({
   updateNote,
   addNote,
   newNote,
-  deleteNote
+  deleteNote,
 }) => {
+
+  const [options, setOptions] = useState([]);
+  const [loading, setLoading] = useState(false);
   const format = (date) => {
     return (
       ("00" + date.getDate()).slice(-2) +
@@ -26,7 +30,7 @@ const Note = ({
     );
   };
   const handleSave = () => {
-    console.log(activeNote)
+    // console.log(activeNote)
     if (activeNote.server_id) updateNote(activeNote);
     else addNote(activeNote);
     setActiveNote("");
@@ -53,7 +57,30 @@ const Note = ({
     });
   };
 
-  return activeNote ? (
+  const [selectedOptions, setSelectedOptions] = useState([])
+
+  const handleChange = (options) => {
+    setSelectedOptions(options);
+    // console.log(options.map(o => o['label']))
+    if(options) onEditField("tags", options.map(sel => sel['label']));
+  }
+  useEffect(() => {
+    setLoading(false);
+    setSelectedOptions([]);
+    setOptions([]);
+    let op = [];
+    if(activeNote && activeNote.tags) {
+      activeNote.tags.map(tag => {op.push({
+        value: tag, 
+        label: tag
+      })
+      })}
+    setSelectedOptions(op);
+    setOptions(op);
+    setLoading(true);
+  }, [activeNote]);
+
+  return activeNote ? ( loading && 
     <div id="page-content-wrapper">
       <div className="container-fluid">
         <Input
@@ -64,8 +91,17 @@ const Note = ({
           value={activeNote.title}
           onChange={(e) => onEditField("title", e.target.value)}
         />
-        <Label className="mt-3">HASHTAGS</Label>
-        <Input type="text" readOnly className="mt-1" />
+        <Label className="mt-3 mb-1">HASHTAGS</Label>
+        <CreatableSelect 
+          closeMenuOnSelect={false}
+          isMulti
+          value={selectedOptions}
+          // options={options} 
+          // noOptionsMessage={() => null}
+          onChange={handleChange}
+          // onInputChange={handleInputChange}
+        />
+        
         <Input
           type="textarea"
           className="mt-3"

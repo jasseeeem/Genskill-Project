@@ -63,6 +63,7 @@ const Home = ({ notes, setUser }) => {
             title: obj[2],
             note: obj[3],
             last_edited: obj[4],
+            tags: obj[5]
           });
         });
       }

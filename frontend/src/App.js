@@ -14,7 +14,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [notes, setNotes] = useState([]);
   const [activeNote, setActiveNote] = useState("");
-
+  
   const handleSettings = () => {
     console.log("clicked settings");
   };
@@ -30,7 +30,8 @@ function App() {
       body: JSON.stringify({
         title: updatedNote.title,
         note: updatedNote.note,
-        last_edited: updatedNote.last_edited
+        last_edited: updatedNote.last_edited,
+        tags: updatedNote.tags
       })
     });
     if(! res.ok) {
@@ -53,7 +54,8 @@ function App() {
       body: JSON.stringify({
         title: addedNote.title,
         note: addedNote.note,
-        last_edited: addedNote.last_edited
+        last_edited: addedNote.last_edited,
+        tags: addedNote.tags
       })
     });
     if(res.ok) {
@@ -132,6 +134,7 @@ function App() {
         );
         if (res.ok) {
           res = await res.json();
+          console.log(res)
           res.map((obj) => {
             notes.push({
               server_id: obj[0],
@@ -140,6 +143,7 @@ function App() {
               title: obj[2],
               note: obj[3],
               last_edited: obj[4],
+              tags: obj[5]
             });
           });
         } else {
@@ -166,6 +170,8 @@ function App() {
                   setActiveNote={setActiveNote}
                   updateNote={updateNote}
                   addNote={addNote}
+
+                  className="left"
                 />
                 <Notes
                   activeNote={getActiveNote()}
