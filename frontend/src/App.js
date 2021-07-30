@@ -178,7 +178,7 @@ function App() {
                 />
               </div>
             ) : (
-              <Home setUser={makeUser} />
+              <Home notes={notes} setUser={makeUser} />
             )}
           </>
         ) : (

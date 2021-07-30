@@ -5,7 +5,9 @@ import bgmobile from "../background/bgmobile.svg";
 import { Modal } from "react-bootstrap";
 import Spinner from 'react-bootstrap/Spinner'
 import { Link } from 'react-router-dom';
-const Home = ({ setUser }) => {
+import uuid from "react-uuid";
+
+const Home = ({ notes, setUser }) => {
   const [loginModalShow, setLoginModalShow] = useState(false);
   const [signupModalShow, setSignupModalShow] = useState(false);
   const [email, setEmail] = useState("");
@@ -43,8 +45,28 @@ const Home = ({ setUser }) => {
       })
     });
     if (res.ok) {
-      res = await res.json();
-      setUser(res);
+      let us = await res.json();
+      res = await fetch(
+        process.env.REACT_APP_API_URL + "/users/" + us.id + "/notes",
+        {
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
+      if (res.ok) {
+        res = await res.json();
+        res.map((obj) => {
+          notes.push({
+            server_id: obj[0],
+            client_id: uuid(),
+            user_id: obj[1],
+            title: obj[2],
+            note: obj[3],
+            last_edited: obj[4],
+          });
+        });
+      }
+      setUser(us);
       setLoginModalShow(false);
     } else {
       if(res.status === 401) {
