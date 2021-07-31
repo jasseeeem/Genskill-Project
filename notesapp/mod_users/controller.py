@@ -25,13 +25,14 @@ def myconverter(o):
 #     except (RuntimeError, KeyError):
 #         return response
 
-@applet.route('/verify', methods = ['GET'])
-@jwt_required()
-def user_verify():
+@applet.route('/<user_id>/verify', methods = ['GET'])
+# @jwt_required()
+def user_verify(user_id):
+    if not user_id: return {'message': 'user doesnt exist'}, 404
     conn = db.get_db()
     cursor = conn.cursor()
-    email = get_jwt_identity()
-    cursor.execute("SELECT * FROM tblUsers WHERE email = %s", (email, ))
+    # email = get_jwt_identity()
+    cursor.execute("SELECT * FROM tblUsers WHERE id = %s", (user_id, ))
     user = cursor.fetchone()
     if(user):
         return {'id': user[0], 'name': user[2], 'email': user[1]}, 200
@@ -104,8 +105,8 @@ def signup():
     
     cursor.execute("SELECT * FROM tblUsers WHERE email = %s", (email, ))
     id, email, name, _ = cursor.fetchone()
-    access_token = create_access_token(identity=email)
-    response = jsonify({'id': id, 'name': name, 'email': email, 'access_token': access_token})
+    # access_token = create_access_token(identity=email)
+    response = jsonify({'id': id, 'name': name, 'email': email})
     # set_access_cookies(response, access_token)
     db.close_db()
     return response
@@ -124,8 +125,8 @@ def login():
         cursor.execute("SELECT * FROM tblUsers WHERE email = %s", (email, ))
         user = cursor.fetchone()
         if user and bcrypt.check_password_hash(user[3], password):
-            access_token = create_access_token(identity=email)
-            response = jsonify({'id': user[0], 'name': user[2], 'email': user[1], 'access_token': access_token})
+            # access_token = create_access_token(identity=email)
+            response = jsonify({'id': user[0], 'name': user[2], 'email': user[1]})
             # set_access_cookies(response, access_token)
             db.close_db()
             return response
