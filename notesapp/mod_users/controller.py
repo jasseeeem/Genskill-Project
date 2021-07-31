@@ -1,3 +1,4 @@
+from os import access
 from flask import request, Blueprint, jsonify
 from flask_jwt_extended import get_jwt, unset_jwt_cookies, create_access_token, get_jwt_identity, jwt_required, set_access_cookies
 from notesapp import bcrypt
@@ -11,18 +12,18 @@ def myconverter(o):
     if isinstance(o, datetime):
         return o.__str__()
 
-@applet.after_request
-def refresh_expiring_jwts(response):
-    try:
-        exp_timestamp = get_jwt()["exp"]
-        now = datetime.now(timezone.utc)
-        target_timestamp = datetime.timestamp(now + timedelta(minutes=2880))
-        if target_timestamp > exp_timestamp:
-            access_token = create_access_token(identity=get_jwt_identity())
-            set_access_cookies(response, access_token)
-        return response
-    except (RuntimeError, KeyError):
-        return response
+# @applet.after_request
+# def refresh_expiring_jwts(response):
+#     try:
+#         exp_timestamp = get_jwt()["exp"]
+#         now = datetime.now(timezone.utc)
+#         target_timestamp = datetime.timestamp(now + timedelta(minutes=2880))
+#         if target_timestamp > exp_timestamp:
+#             access_token = create_access_token(identity=get_jwt_identity())
+#             set_access_cookies(response, access_token)
+#         return response
+#     except (RuntimeError, KeyError):
+#         return response
 
 @applet.route('/verify', methods = ['GET'])
 @jwt_required()
@@ -101,9 +102,9 @@ def signup():
     
     cursor.execute("SELECT * FROM tblUsers WHERE email = %s", (email, ))
     id, email, name, _ = cursor.fetchone()
-    response = jsonify({'id': id, 'name': name, 'email': email})
     access_token = create_access_token(identity=email)
-    set_access_cookies(response, access_token)
+    response = jsonify({'id': id, 'name': name, 'email': email, 'access_token': access_token})
+    # set_access_cookies(response, access_token)
     db.close_db()
     return response
 
@@ -121,9 +122,9 @@ def login():
         cursor.execute("SELECT * FROM tblUsers WHERE email = %s", (email, ))
         user = cursor.fetchone()
         if user and bcrypt.check_password_hash(user[3], password):
-            response = jsonify({'id': user[0], 'name': user[2], 'email': user[1]})
             access_token = create_access_token(identity=email)
-            set_access_cookies(response, access_token)
+            response = jsonify({'id': user[0], 'name': user[2], 'email': user[1], 'access_token': access_token})
+            # set_access_cookies(response, access_token)
             db.close_db()
             return response
     db.close_db()
