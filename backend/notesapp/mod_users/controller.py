@@ -129,7 +129,7 @@ def login():
     db.close_db()
     return {'message': 'Invalid email or password'}, 401
 
-@applet.route('/logout')
+@applet.route('/logout', methods = ['POST'])
 @jwt_required()
 def logout():
     response = jsonify({"message": "User logged out"})

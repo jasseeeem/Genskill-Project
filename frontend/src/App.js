@@ -14,82 +14,108 @@ function App() {
   const [user, setUser] = useState(null);
   const [notes, setNotes] = useState([]);
   const [activeNote, setActiveNote] = useState("");
-  
-  const handleSettings = () => {
-    console.log("clicked settings");
+
+  const handleLogOut = async () => {
+    setUser(null);
+    await fetch(
+      process.env.REACT_APP_API_URL +
+        "/users/logout",
+      {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        method: "POST",
+      }
+    );
+    setNotes([]);
   };
+
   const makeUser = (obj) => {
     setUser(obj);
   };
 
   const updateNote = async (updatedNote) => {
-    let res = await fetch(process.env.REACT_APP_API_URL + "/users/" + user.id + "/notes/" + updatedNote.server_id, {
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      method: "PUT",
-      body: JSON.stringify({
-        title: updatedNote.title,
-        note: updatedNote.note,
-        last_edited: updatedNote.last_edited,
-        tags: updatedNote.tags
-      })
-    });
-    if(! res.ok) {
+    let res = await fetch(
+      process.env.REACT_APP_API_URL +
+        "/users/" +
+        user.id +
+        "/notes/" +
+        updatedNote.server_id,
+      {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        method: "PUT",
+        body: JSON.stringify({
+          title: updatedNote.title,
+          note: updatedNote.note,
+          last_edited: updatedNote.last_edited,
+          tags: updatedNote.tags,
+        }),
+      }
+    );
+    if (!res.ok) {
       console.log("Error in updating note");
     }
   };
-  
+
   const onUpdateNote = (updatedNote) => {
     const updatedNotesArr = notes.map((note) => {
-      return (note.client_id === updatedNote.client_id) ? updatedNote : note;
+      return note.client_id === updatedNote.client_id ? updatedNote : note;
     });
     setNotes(updatedNotesArr);
   };
 
   const addNote = async (addedNote) => {
-    let res = await fetch(process.env.REACT_APP_API_URL + "/users/" + user.id + "/notes/", {
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      method: "POST",
-      body: JSON.stringify({
-        title: addedNote.title,
-        note: addedNote.note,
-        last_edited: addedNote.last_edited,
-        tags: addedNote.tags
-      })
-    });
-    if(res.ok) {
+    let res = await fetch(
+      process.env.REACT_APP_API_URL + "/users/" + user.id + "/notes/",
+      {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        method: "POST",
+        body: JSON.stringify({
+          title: addedNote.title,
+          note: addedNote.note,
+          last_edited: addedNote.last_edited,
+          tags: addedNote.tags,
+        }),
+      }
+    );
+    if (res.ok) {
       res = await res.json();
       console.log(res);
       onUpdateNote({
         ...addedNote,
-        server_id: res['id'],
-      })
+        server_id: res["id"],
+      });
     } else {
       console.log("Error in adding note");
     }
-  }
+  };
 
   const getActiveNote = () => {
     return notes.find((note) => note.client_id === activeNote);
   };
 
-    const deleteNote = async () => {
-      const deletedNote = getActiveNote();
-      console.log(deletedNote)
-      setActiveNote(null);
-      setNotes(notes.filter(note => note.client_id !== deletedNote.client_id));
-      if(! deletedNote.server_id) return;
-      let res = await fetch(process.env.REACT_APP_API_URL + "/users/" + user.id + "/notes/" + deletedNote.server_id, {
+  const deleteNote = async () => {
+    const deletedNote = getActiveNote();
+    setActiveNote(null);
+    setNotes(notes.filter((note) => note.client_id !== deletedNote.client_id));
+    if (!deletedNote.server_id) return;
+    let res = await fetch(
+      process.env.REACT_APP_API_URL +
+        "/users/" +
+        user.id +
+        "/notes/" +
+        deletedNote.server_id,
+      {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         method: "DELETE",
-      });
-      if(! res.ok) {
-        console.log("Error while deleting note");
       }
+    );
+    if (!res.ok) {
+      console.log("Error while deleting note");
     }
-  
+  };
 
   const newNote = () => {
     var m = new Date();
@@ -111,10 +137,10 @@ function App() {
       title: "",
       note: "",
       last_edited: dateString,
-    }
+    };
     setActiveNote(note.client_id);
-    setNotes([note, ...notes])
-  }
+    setNotes([note, ...notes]);
+  };
 
   useEffect(() => {
     (async () => {
@@ -134,7 +160,6 @@ function App() {
         );
         if (res.ok) {
           res = await res.json();
-          console.log(res)
           res.map((obj) => {
             notes.push({
               server_id: obj[0],
@@ -143,7 +168,7 @@ function App() {
               title: obj[2],
               note: obj[3],
               last_edited: obj[4],
-              tags: obj[5]
+              tags: obj[5],
             });
           });
         } else {
@@ -161,7 +186,7 @@ function App() {
       <BrowserRouter>
         {loading ? (
           <>
-            <Navbar user={user} handleSettings={handleSettings} />
+            <Navbar user={user} handleLogOut={handleLogOut} />
             {user ? (
               <div className="d-flex" id="wrapper">
                 <Sidebar
@@ -170,7 +195,6 @@ function App() {
                   setActiveNote={setActiveNote}
                   updateNote={updateNote}
                   addNote={addNote}
-
                   className="left"
                 />
                 <Notes
