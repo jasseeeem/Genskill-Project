@@ -8,6 +8,7 @@ import Sidebar from "./components/Sidebar";
 import Notes from "./components/Note.js";
 import Navbar from "./components/Navbar.js";
 import "./custom.scss";
+import Cookies from 'universal-cookie';
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -17,16 +18,9 @@ function App() {
 
   const handleLogOut = async () => {
     setUser(null);
-    await fetch(
-      process.env.REACT_APP_API_URL +
-        "/users/logout",
-      {
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        method: "POST",
-      }
-    );
     setNotes([]);
+    const cookies = new Cookies();
+    cookies.remove('user_id');
   };
 
   const makeUser = (obj) => {
@@ -144,7 +138,10 @@ function App() {
 
   useEffect(() => {
     (async () => {
-      let res = await fetch(process.env.REACT_APP_API_URL + "/users/verify", {
+      const cookies = new Cookies();
+      let user_id = cookies.get('user_id');
+      if(user_id) {
+      let res = await fetch(process.env.REACT_APP_API_URL + "/users/" + user_id + "/verify", {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
@@ -176,9 +173,9 @@ function App() {
         }
       } else {
         setUser(null);
-      }
+      } }
       setLoading(true);
-    })();
+   })();
   }, []);
 
   return (

@@ -6,6 +6,7 @@ import { Modal } from "react-bootstrap";
 import Spinner from 'react-bootstrap/Spinner'
 import { Link } from 'react-router-dom';
 import uuid from "react-uuid";
+import Cookies from 'universal-cookie';
 
 const Home = ({ notes, setUser }) => {
   const [loginModalShow, setLoginModalShow] = useState(false);
@@ -46,6 +47,9 @@ const Home = ({ notes, setUser }) => {
     });
     if (res.ok) {
       let us = await res.json();
+      const cookies = new Cookies();
+      cookies.set('user_id', us.id, { path: '/' });
+      
       res = await fetch(
         process.env.REACT_APP_API_URL + "/users/" + us.id + "/notes",
         {
@@ -67,12 +71,14 @@ const Home = ({ notes, setUser }) => {
           });
         });
       }
-      setUser(us);
+      setUser({
+        id: us.id,
+        name: us.name,
+        email: us.email
+      });
       setLoginModalShow(false);
     } else {
-      if(res.status === 401) {
-        setErrorText("Invalid Email or Password");
-      }
+      setErrorText("Invalid Email or Password");
       setUser(null);
     }
     setLogging(false);
@@ -103,7 +109,13 @@ const Home = ({ notes, setUser }) => {
     });
     if (res.ok) {
       res = await res.json();
-      setUser(res);
+      const cookies = new Cookies();
+      cookies.set('user_id', res.id, { path: '/' });
+      setUser({
+        id: res.id,
+        name: res.name,
+        email: res.email
+      });
       setSignupModalShow(false);
     } else {
       if(res.status === 409) {
@@ -131,7 +143,7 @@ const Home = ({ notes, setUser }) => {
             </Button>
             <div className="mt-4">
               <small>
-                Developed as part of <Link to="#">Genskill Project</Link>
+                Developed as part of <Link to="https://github.com/jasseeeem/Genskill-Project">Genskill Project</Link>
               </small>
             </div>
           </div>

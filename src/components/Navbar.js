@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { NavLink } from "react-router-dom";
 import { FiSettings } from "react-icons/fi";
 import { DropdownButton, Dropdown} from "react-bootstrap";
-import { Input } from "reactstrap"
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../custom.scss";
 
