@@ -18,6 +18,7 @@ def create_app():
     CORS(app, resources={
         r"\/api\/.*": api_cors_config
     })
+    
     app.config['JWT_COOKIE_DOMAIN '] = "https://jasseeeem.github.io/"
     app.config['JWT_TOKEN_LOCATION'] = ['cookies']
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=10000)
