@@ -12,7 +12,7 @@ def create_app():
     global bcrypt
     bcrypt = Bcrypt(app)
     api_cors_config = {
-        "origins": ["http://127.0.0.1:3000", "http://localhost:3000"],
+        "origins": ["http://127.0.0.1:3000", "http://localhost:3000", "https://jasseeeem.github.io"],
         "supports_credentials": True
     }
     cors = CORS(app, resources={
